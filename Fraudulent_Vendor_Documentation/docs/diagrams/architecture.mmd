@@ -1,0 +1,67 @@
+%% Architecture of the Fraudulent Vendor Bank-Change Detection Workflow
+%% Modular monolith: one deployable, module boundaries enforced in code.
+flowchart TB
+    subgraph browser["Browser — http://localhost:5173"]
+        UI["React 18 + TypeScript + Vite<br/>Tailwind CSS"]
+        RR["React Router<br/>role-based routes"]
+        RHF["React Hook Form + Zod<br/>client-side validation"]
+        AX["Axios client<br/>bearer token interceptor"]
+        UI --> RR
+        UI --> RHF
+        UI --> AX
+    end
+
+    PROXY["Vite dev proxy<br/>/api → localhost:9090"]
+    AX --> PROXY
+
+    subgraph backend["Spring Boot 4 — http://localhost:9090"]
+        SEC["Spring Security 7<br/>JwtAuthenticationFilter → ActiveUserGuard<br/>stateless, role-based"]
+        PROXY --> SEC
+
+        subgraph controllers["REST controllers (DTO contracts only)"]
+            C1["AuthController"]
+            C2["VendorController"]
+            C3["BankChangeRequestController"]
+            C4["ApprovalController"]
+            C5["PaymentController<br/>PaymentHoldController"]
+            C6["EmergencyOverrideController"]
+            C7["NotificationController"]
+            C8["AuditController"]
+        end
+        SEC --> controllers
+
+        subgraph services["Service layer — business rules and transactions"]
+            S1["AuthService"]
+            S2["VendorService"]
+            S3["BankChangeRequestService"]
+            S4["ApproverAssignmentService<br/>deterministic, independent"]
+            S5["ApprovalService<br/>separation of duties"]
+            S6["BankActivationService<br/>post-cooling-off revalidation"]
+            S7["PaymentService<br/>PaymentHoldService"]
+            S8["EmergencyOverrideService<br/>cooling-off exception only"]
+            S9["NotificationService"]
+            S10["AuditService"]
+            S11["ReferenceGeneratorService<br/>row-locked sequences"]
+        end
+        controllers --> services
+
+        SCHED["Spring Scheduler<br/>CoolingOffScheduler<br/>row-locked, idempotent pass"]
+        SCHED --> S6
+
+        ERR["@RestControllerAdvice<br/>GlobalExceptionHandler"]
+        controllers -.-> ERR
+
+        REPO["Spring Data JPA repositories<br/>Hibernate 7"]
+        services --> REPO
+        FLY["Flyway migrations<br/>V1 schema · V2 reference · V3 seed"]
+    end
+
+    DB[("MySQL 8<br/>vendor_fraud_db<br/>14 tables, FK + unique constraints")]
+    REPO --> DB
+    FLY --> DB
+
+    style browser fill:#eef4ff,stroke:#2f5bd7
+    style backend fill:#f8fafc,stroke:#475569
+    style DB fill:#ecfdf5,stroke:#059669
+    style SCHED fill:#fef3c7,stroke:#b45309
+    style SEC fill:#fee2e2,stroke:#b91c1c

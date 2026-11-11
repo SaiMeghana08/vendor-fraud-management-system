@@ -1,0 +1,55 @@
+# Java / Maven
+**/target/
+*.class
+*.jar
+*.war
+
+# React / Node.js
+**/node_modules/
+**/dist/
+**/build/
+**/coverage/
+
+# Environment variables
+.env
+.env.*
+**/.env
+**/.env.*
+!.env.example
+!**/.env.example
+
+# Spring Boot local configuration
+**/application-local.yml
+**/application-local.yaml
+**/application-local.properties
+
+# Secrets and keys
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+*.keystore
+**/secrets/
+**/credentials/
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+*.tmp
+*.bak
+
+# Local database dumps
+*.sql.gz
+*.dump

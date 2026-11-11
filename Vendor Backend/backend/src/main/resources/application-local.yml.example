@@ -1,0 +1,14 @@
+spring:
+  datasource:
+    username: vendor_fraud_app
+    password: Megha@703
+
+app:
+  security:
+    jwt:
+      secret: YLIIYb6dlsNjw+ZmGtWJpGZ6tOBNpjeDADqFtjPW5JSwB47mcqICDXTuUOmYL1S0
+  cooling-off:
+    duration: PT2M
+  bootstrap:
+    enabled: true
+    default-password: Demo@12345

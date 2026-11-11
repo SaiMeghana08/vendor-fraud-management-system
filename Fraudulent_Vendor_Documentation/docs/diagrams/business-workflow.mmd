@@ -1,0 +1,72 @@
+%% Business workflow. Rectangles are manual actions; stadium shapes are
+%% backend-automated steps; diamonds are decisions.
+flowchart TD
+    START(["Maker signs in"]) --> SELECT["Maker selects an active vendor<br/>inactive and soft-deleted vendors are not listed"]
+    SELECT --> ENTER["Maker enters proposed synthetic bank details,<br/>reason and evidence reference"]
+    ENTER --> SUBMIT["Maker submits<br/>no approver, reference or status field exists on the form"]
+
+    SUBMIT --> VALIDATE(["Backend validates:<br/>vendor active · no duplicate open request ·<br/>details actually differ · no client-supplied fields"])
+    VALIDATE -->|rejected| REJECT400(["400 / 422 returned<br/>nothing is created"])
+
+    VALIDATE --> GENREF(["Backend generates request reference<br/>BCR-YYYY-NNNNNN"])
+    GENREF --> DERIVE(["Backend derives Maker identity from the JWT principal"])
+    DERIVE --> SAVE(["Request saved — live banking details untouched"])
+    SAVE --> HOLDS(["Payment holds placed on the vendor's payable payments"])
+    HOLDS --> ASSIGN1(["ApproverAssignmentService assigns first approver<br/>active APPROVER, never the Maker,<br/>fewest pending tasks, lowest id breaks ties"])
+    ASSIGN1 --> NOTIFY1(["Notification to the assigned approver"])
+
+    NOTIFY1 --> D1{"First approver<br/>decides"}
+    D1 -->|reject, comment required| STOP1(["Request REJECTED<br/>workflow stops · holds remain"])
+    D1 -->|approve| ASSIGN2(["Backend assigns a different second approver<br/>excludes the Maker and everyone already involved"])
+
+    ASSIGN2 --> NOTIFY2(["Notification to the second approver"])
+    NOTIFY2 --> D2{"Second approver<br/>decides"}
+    D2 -->|reject, comment required| STOP2(["Request REJECTED<br/>workflow stops · holds remain"])
+    D2 -->|approve| COOL(["Cooling-off starts<br/>default 24h, configurable<br/>deadline stored in the database"])
+
+    COOL --> OVR{"Emergency override<br/>requested?"}
+    OVR -->|no| WATCH
+    OVR -->|"yes — Accounts Payable only"| OVRREQ["AP submits justification + evidence"]
+    OVRREQ --> OVRDEC{"Administrator decides<br/>requester may never decide"}
+    OVRDEC -->|reject| WATCH
+    OVRDEC -->|approve| OVRAPP(["Cooling-off deadline brought forward to now<br/>dual approval unchanged · holds NOT released"])
+    OVRAPP --> WATCH
+
+    WATCH(["Scheduler watches the deadline<br/>recovers after restart, idempotent"])
+    WATCH --> DUE{"Deadline<br/>elapsed?"}
+    DUE -->|not yet| WATCH
+    DUE -->|yes| REVAL(["Backend revalidates: window elapsed ·<br/>vendor active · both approvals present ·<br/>two distinct approvers · neither is the Maker"])
+
+    REVAL -->|any check fails| BLOCKED(["ACTIVATION_BLOCKED<br/>Administrator exception review"])
+    REVAL -->|all checks pass| ACTIVATE(["Approved details activated<br/>previous record marked SUPERSEDED, never deleted"])
+
+    ACTIVATE --> APREVIEW["Accounts Payable reviews payment eligibility<br/>recomputed live on every operation"]
+    BLOCKED --> APREVIEW
+    STOP1 --> APREVIEW
+    STOP2 --> APREVIEW
+
+    APREVIEW --> RELEASE{"Release a hold?"}
+    RELEASE -->|"yes — AP only, justification required"| RELEASED(["Conditions rechecked · release actor,<br/>time and justification recorded"])
+    RELEASE -->|no| HELD(["Payment stays blocked"])
+
+    RELEASED --> PAY{"Payment eligible<br/>right now?"}
+    PAY -->|yes| PROCESSED(["Payment processed"])
+    PAY -->|no| HELD
+
+    AUDIT(["Every significant action writes an audit event<br/>and the notifications it warrants"])
+
+    style START fill:#eef4ff,stroke:#2f5bd7
+    style SELECT fill:#eef4ff,stroke:#2f5bd7
+    style ENTER fill:#eef4ff,stroke:#2f5bd7
+    style SUBMIT fill:#eef4ff,stroke:#2f5bd7
+    style OVRREQ fill:#eef4ff,stroke:#2f5bd7
+    style APREVIEW fill:#eef4ff,stroke:#2f5bd7
+    style STOP1 fill:#fee2e2,stroke:#b91c1c
+    style STOP2 fill:#fee2e2,stroke:#b91c1c
+    style BLOCKED fill:#fee2e2,stroke:#b91c1c
+    style REJECT400 fill:#fee2e2,stroke:#b91c1c
+    style ACTIVATE fill:#ecfdf5,stroke:#059669
+    style PROCESSED fill:#ecfdf5,stroke:#059669
+    style OVRAPP fill:#fef3c7,stroke:#b45309
+    style HELD fill:#fef3c7,stroke:#b45309
+    style AUDIT fill:#f1f5f9,stroke:#475569

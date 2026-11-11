@@ -1,0 +1,44 @@
+# ---------------------------------------------------------------------
+# Test profile.
+#
+# Tests run against H2 in MySQL compatibility mode with the schema
+# generated from the JPA mappings. Flyway is disabled here because its
+# migrations are MySQL-specific DDL; DATABASE_SETUP.md explains how to
+# run the same suite against a real MySQL 8 instance, which is the only
+# way to exercise the migrations themselves.
+# ---------------------------------------------------------------------
+spring:
+  datasource:
+    url: jdbc:h2:mem:vendorfraud;MODE=MySQL;DB_CLOSE_DELAY=-1;DATABASE_TO_LOWER=TRUE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: ""
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.H2Dialect
+  flyway:
+    enabled: false
+
+app:
+  security:
+    jwt:
+      secret: test-only-signing-key-not-a-real-secret-0123456789
+      issuer: vendor-fraud-detection
+      access-token-ttl: PT1H
+  cooling-off:
+    duration: PT24H
+    scheduler:
+      # Far in the future: the tests drive the scheduler explicitly so
+      # that no background pass can race an assertion.
+      cron: "0 0 5 31 2 *"
+      batch-size: 50
+  bootstrap:
+    enabled: false
+
+logging:
+  level:
+    root: WARN
+    com.vendorfraud: INFO

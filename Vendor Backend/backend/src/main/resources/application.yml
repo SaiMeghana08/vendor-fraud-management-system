@@ -1,0 +1,65 @@
+# =====================================================================
+# Fraudulent Vendor Bank-Change Detection Workflow - base configuration
+#
+# Secrets are NEVER committed.  Every sensitive value below is read
+# from an environment variable.  Copy application-local.yml.example to
+# application-local.yml (git-ignored) or export the variables.
+# =====================================================================
+server:
+  port: 9090
+
+spring:
+  application:
+    name: vendor-fraud-detection
+  datasource:
+    url: "jdbc:mysql://localhost:3306/vendor_fraud_new?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC"
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    hikari:
+      maximum-pool-size: 10
+      pool-name: vendor-fraud-pool
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+        format_sql: false
+  flyway:
+    enabled: true
+    baseline-on-migrate: false
+    locations: classpath:db/migration
+  jackson:
+    # Jackson 3 writes java.time values as ISO-8601 strings by default,
+    # so no date-format override is needed here.
+    default-property-inclusion: non_null
+
+app:
+  security:
+    jwt:
+      # No default: the application refuses to start without it.
+      secret: ${JWT_SECRET}
+      issuer: vendor-fraud-detection
+      access-token-ttl: PT8H
+  cooling-off:
+    # Demonstration default of 24 hours; override per environment.
+    duration: ${COOLING_OFF_DURATION:PT24H}
+    scheduler:
+      # Every two minutes: short enough to demonstrate, cheap enough to run.
+      cron: ${COOLING_OFF_CRON:0 */2 * * * *}
+      batch-size: 50
+  bootstrap:
+    # Creates the demonstration users and their role assignments.
+    # Leave disabled in any shared or production-like environment.
+    enabled: ${BOOTSTRAP_ENABLED:false}
+    default-password: ${BOOTSTRAP_PASSWORD:}
+
+logging:
+  level:
+    root: INFO
+    com.vendorfraud: INFO
+    org.hibernate.SQL: WARN
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [%X{correlationId:-}] %logger{36} - %msg%n"

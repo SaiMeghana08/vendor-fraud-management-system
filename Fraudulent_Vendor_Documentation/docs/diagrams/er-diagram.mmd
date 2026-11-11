@@ -1,0 +1,211 @@
+%% ER diagram matching the MySQL schema created by V1__initial_schema.sql.
+%% No permissions table exists anywhere in this design.
+erDiagram
+    USERS ||--o{ USER_ROLES : "holds"
+    ROLES ||--o{ USER_ROLES : "granted via"
+    USERS ||--o{ BANK_CHANGE_REQUESTS : "raises as maker"
+    USERS ||--o{ APPROVAL_TASKS : "assigned as approver"
+    USERS ||--o{ NOTIFICATIONS : "receives"
+    USERS ||--o{ AUDIT_LOGS : "acts in"
+    USERS ||--o{ EMERGENCY_OVERRIDES : "requests / decides"
+    USERS ||--o{ PAYMENT_HOLDS : "releases"
+    USERS ||--o{ PAYMENTS : "creates / processes"
+    USERS ||--o{ APPROVAL_ASSIGNMENT_HISTORY : "actor / assignee"
+
+    VENDORS ||--o{ VENDOR_BANK_ACCOUNTS : "has current and superseded"
+    VENDORS ||--o{ BANK_CHANGE_REQUESTS : "subject of"
+    VENDORS ||--o{ PAYMENTS : "is paid through"
+
+    VENDOR_BANK_ACCOUNTS ||--o{ BANK_CHANGE_REQUESTS : "is the current record for"
+    VENDOR_BANK_ACCOUNTS ||--o{ PAYMENTS : "pay-to record"
+
+    BANK_CHANGE_REQUESTS ||--o{ APPROVAL_TASKS : "requires two stages of"
+    BANK_CHANGE_REQUESTS ||--o{ PAYMENT_HOLDS : "causes"
+    BANK_CHANGE_REQUESTS ||--o{ EMERGENCY_OVERRIDES : "may have a cooling-off exception"
+
+    APPROVAL_TASKS ||--o{ APPROVAL_ASSIGNMENT_HISTORY : "assignment trail"
+    PAYMENTS ||--o{ PAYMENT_HOLDS : "blocked by"
+
+    USERS {
+        bigint id PK
+        varchar username UK
+        varchar email UK
+        varchar full_name
+        varchar password_hash "BCrypt"
+        boolean is_active "soft delete"
+        datetime deleted_at "soft delete"
+        bigint deleted_by FK "soft delete"
+        datetime created_at
+        datetime updated_at
+        bigint version "optimistic lock"
+    }
+
+    ROLES {
+        bigint id PK
+        varchar name UK "MAKER | APPROVER | ACCOUNTS_PAYABLE | ADMINISTRATOR"
+        varchar description
+        datetime created_at
+    }
+
+    USER_ROLES {
+        bigint user_id PK_FK
+        bigint role_id PK_FK
+        datetime created_at
+    }
+
+    VENDORS {
+        bigint id PK
+        varchar vendor_code UK
+        varchar name
+        varchar tax_reference
+        varchar contact_email
+        boolean is_active "soft delete"
+        datetime deleted_at "soft delete"
+        bigint deleted_by FK "soft delete"
+        datetime created_at
+        datetime updated_at
+        bigint version
+    }
+
+    VENDOR_BANK_ACCOUNTS {
+        bigint id PK
+        bigint vendor_id FK
+        varchar account_holder_name
+        varchar bank_name
+        varchar account_reference "synthetic, masked on output"
+        varchar routing_code
+        varchar status "ACTIVE | SUPERSEDED"
+        tinyint active_marker UK "one ACTIVE per vendor"
+        datetime activated_at
+        datetime superseded_at "history preserved"
+        bigint source_request_id "activating request"
+        boolean is_active "soft delete"
+        datetime deleted_at "soft delete"
+        bigint deleted_by FK "soft delete"
+        bigint version
+    }
+
+    BANK_CHANGE_REQUESTS {
+        bigint id PK
+        varchar request_reference UK "BCR-YYYY-NNNNNN, backend generated"
+        bigint vendor_id FK
+        bigint maker_id FK "derived from JWT"
+        bigint current_bank_account_id FK
+        varchar proposed_account_holder_name
+        varchar proposed_bank_name
+        varchar proposed_account_reference "synthetic"
+        varchar proposed_routing_code
+        varchar reason
+        varchar evidence_reference
+        varchar status "PENDING_FIRST_APPROVAL | PENDING_SECOND_APPROVAL | COOLING_OFF | ACTIVATED | REJECTED | CANCELLED | ACTIVATION_BLOCKED"
+        tinyint open_marker UK "one open request per vendor"
+        int cooling_off_hours
+        datetime cooling_off_start_at
+        datetime cooling_off_end_at "scheduler deadline"
+        bigint cooling_off_override_id "approved exception"
+        bigint activated_bank_account_id FK
+        datetime activated_at
+        varchar terminal_reason
+        bigint version
+    }
+
+    APPROVAL_TASKS {
+        bigint id PK
+        bigint bank_change_request_id FK
+        varchar stage "FIRST | SECOND"
+        bigint assignee_id FK "backend assigned"
+        varchar status "PENDING | APPROVED | REJECTED | REASSIGNED"
+        tinyint open_marker UK "one PENDING per request and stage"
+        varchar decision_comment
+        datetime assigned_at
+        datetime decided_at
+        bigint version
+    }
+
+    APPROVAL_ASSIGNMENT_HISTORY {
+        bigint id PK
+        bigint approval_task_id FK
+        varchar action "ASSIGNED | REASSIGNED"
+        bigint previous_assignee_id FK
+        bigint new_assignee_id FK
+        bigint actor_id FK
+        varchar reason
+        datetime created_at "append only"
+    }
+
+    PAYMENTS {
+        bigint id PK
+        varchar payment_reference UK "PAY-YYYY-NNNNNN, backend generated"
+        bigint vendor_id FK
+        bigint vendor_bank_account_id FK
+        decimal amount
+        char currency
+        date due_date
+        varchar description
+        varchar status "CREATED | ON_HOLD | PROCESSED | CANCELLED"
+        bigint created_by FK
+        datetime processed_at
+        bigint processed_by FK
+        bigint version
+    }
+
+    PAYMENT_HOLDS {
+        bigint id PK
+        bigint payment_id FK
+        bigint bank_change_request_id FK
+        varchar reason
+        varchar status "ACTIVE | RELEASED"
+        tinyint active_marker UK "one ACTIVE per payment and request"
+        varchar release_justification "mandatory"
+        bigint released_by FK "Accounts Payable"
+        datetime released_at
+        bigint version
+    }
+
+    EMERGENCY_OVERRIDES {
+        bigint id PK
+        varchar override_reference UK "EOV-YYYY-NNNNNN, backend generated"
+        bigint bank_change_request_id FK
+        bigint requested_by FK "Accounts Payable"
+        varchar justification
+        varchar evidence_reference
+        varchar status "PENDING | APPROVED | REJECTED"
+        tinyint open_marker UK "one open override per request"
+        bigint decided_by FK "Administrator, never the requester"
+        datetime decided_at
+        varchar decision_comment
+        bigint version
+    }
+
+    NOTIFICATIONS {
+        bigint id PK
+        bigint recipient_id FK "private to this user"
+        varchar type
+        varchar title
+        varchar message
+        varchar reference_type
+        bigint reference_id
+        boolean is_read
+        datetime read_at
+        datetime created_at
+    }
+
+    AUDIT_LOGS {
+        bigint id PK
+        bigint actor_id FK
+        varchar actor_username
+        varchar action
+        varchar entity_type
+        bigint entity_id
+        varchar workflow_state
+        varchar reason "references masked on output"
+        datetime created_at "append only"
+    }
+
+    REFERENCE_SEQUENCES {
+        varchar sequence_name PK
+        varchar prefix
+        int year_part
+        bigint next_value "SELECT FOR UPDATE, never MAX(id)+1"
+        datetime updated_at
+    }

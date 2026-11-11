@@ -1,0 +1,2869 @@
+{
+  "info": {
+    "name": "Fraudulent Vendor Bank-Change Detection Workflow",
+    "_postman_id": "0f2a7c54-6a1e-4f3f-9d1b-5c2f8c1a44e1",
+    "description": "Complete API collection for the Fraudulent Vendor Bank-Change Detection Workflow.\n\n**How to run it**\n\n1. Import `Fraudulent_Vendor_Environment.postman_environment.json` and select it.\n2. Start the backend on http://localhost:9090 with the bootstrap enabled so the demonstration users exist.\n3. Run folder 1 first: it captures a bearer token per role into collection variables.\n4. Run folders 2 to 10 in order. Each folder's requests chain through collection variables captured by the ones before it.\n\n**Tokens**\n\nThe collection authorises with `{{activeToken}}` by default. Set it to the role a request needs - several negative tests exist precisely to be run with the *wrong* role, and each one says which token to use in its description.\n\nEvery account reference in this collection is synthetic.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{activeToken}}",
+        "type": "string"
+      }
+    ]
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Default to the Maker's token unless a run has set another.",
+          "if (!pm.collectionVariables.get('activeToken')) {",
+          "    pm.collectionVariables.set('activeToken',",
+          "        pm.collectionVariables.get('makerToken') || '');",
+          "}"
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "pm.test('response is JSON or empty', function () {",
+          "    const type = pm.response.headers.get('Content-Type') || '';",
+          "    pm.expect(type === '' || type.includes('json')).to.be.true;",
+          "});"
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "activeToken",
+      "value": ""
+    },
+    {
+      "key": "makerToken",
+      "value": ""
+    },
+    {
+      "key": "approverOneToken",
+      "value": ""
+    },
+    {
+      "key": "approverTwoToken",
+      "value": ""
+    },
+    {
+      "key": "apToken",
+      "value": ""
+    },
+    {
+      "key": "adminToken",
+      "value": ""
+    },
+    {
+      "key": "vendorId",
+      "value": ""
+    },
+    {
+      "key": "requestId",
+      "value": ""
+    },
+    {
+      "key": "requestReference",
+      "value": ""
+    },
+    {
+      "key": "freshRequestId",
+      "value": ""
+    },
+    {
+      "key": "firstTaskId",
+      "value": ""
+    },
+    {
+      "key": "secondTaskId",
+      "value": ""
+    },
+    {
+      "key": "myTaskId",
+      "value": ""
+    },
+    {
+      "key": "replacementUserId",
+      "value": ""
+    },
+    {
+      "key": "paymentId",
+      "value": ""
+    },
+    {
+      "key": "holdId",
+      "value": ""
+    },
+    {
+      "key": "overrideId",
+      "value": ""
+    },
+    {
+      "key": "notificationId",
+      "value": ""
+    },
+    {
+      "key": "otherUserNotificationId",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Authentication",
+      "description": "Sign in as each role. Every later request uses the token captured here. There is deliberately no registration endpoint to call.",
+      "item": [
+        {
+          "name": "Login as Maker",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "description": "Signs in and stores the bearer token in {{makerToken}} for the rest of the run.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{makerUsername}}\",\n  \"password\": \"{{password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', function () { pm.response.to.have.status(200); });",
+                  "const body = pm.response.json();",
+                  "pm.collectionVariables.set('makerToken', body.accessToken);",
+                  "pm.test('token and roles returned', function () {",
+                  "    pm.expect(body.accessToken).to.be.a('string').and.not.empty;",
+                  "    pm.expect(body.roles).to.be.an('array').that.is.not.empty;",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login as Approver one",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "description": "Signs in and stores the bearer token in {{approverOneToken}} for the rest of the run.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{approverOneUsername}}\",\n  \"password\": \"{{password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', function () { pm.response.to.have.status(200); });",
+                  "const body = pm.response.json();",
+                  "pm.collectionVariables.set('approverOneToken', body.accessToken);",
+                  "pm.test('token and roles returned', function () {",
+                  "    pm.expect(body.accessToken).to.be.a('string').and.not.empty;",
+                  "    pm.expect(body.roles).to.be.an('array').that.is.not.empty;",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login as Approver two",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "description": "Signs in and stores the bearer token in {{approverTwoToken}} for the rest of the run.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{approverTwoUsername}}\",\n  \"password\": \"{{password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', function () { pm.response.to.have.status(200); });",
+                  "const body = pm.response.json();",
+                  "pm.collectionVariables.set('approverTwoToken', body.accessToken);",
+                  "pm.test('token and roles returned', function () {",
+                  "    pm.expect(body.accessToken).to.be.a('string').and.not.empty;",
+                  "    pm.expect(body.roles).to.be.an('array').that.is.not.empty;",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login as Accounts Payable",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "description": "Signs in and stores the bearer token in {{apToken}} for the rest of the run.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{apUsername}}\",\n  \"password\": \"{{password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', function () { pm.response.to.have.status(200); });",
+                  "const body = pm.response.json();",
+                  "pm.collectionVariables.set('apToken', body.accessToken);",
+                  "pm.test('token and roles returned', function () {",
+                  "    pm.expect(body.accessToken).to.be.a('string').and.not.empty;",
+                  "    pm.expect(body.roles).to.be.an('array').that.is.not.empty;",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login as Administrator",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "description": "Signs in and stores the bearer token in {{adminToken}} for the rest of the run.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{adminUsername}}\",\n  \"password\": \"{{password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', function () { pm.response.to.have.status(200); });",
+                  "const body = pm.response.json();",
+                  "pm.collectionVariables.set('adminToken', body.accessToken);",
+                  "pm.test('token and roles returned', function () {",
+                  "    pm.expect(body.accessToken).to.be.a('string').and.not.empty;",
+                  "    pm.expect(body.roles).to.be.an('array').that.is.not.empty;",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Current profile",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/auth/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "me"
+              ]
+            },
+            "description": "Returns the caller's own profile, derived from the token."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', function () { pm.response.to.have.status(200); });",
+                  "pm.test('roles present', function () {",
+                  "    pm.expect(pm.response.json().roles).to.be.an('array');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "NEGATIVE: wrong password is rejected",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "description": "A bad password returns 401 and never reveals which part was wrong.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{makerUsername}}\",\n  \"password\": \"not-the-password\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 401', function () { pm.response.to.have.status(401); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "NEGATIVE: deactivated user cannot sign in",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "description": "A soft-deleted identity is refused even with the correct password.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{inactiveUsername}}\",\n  \"password\": \"{{password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 401', function () { pm.response.to.have.status(401); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "NEGATIVE: no registration endpoint exists",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/register",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "register"
+              ]
+            },
+            "description": "There is no self-service registration anywhere in the application.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"intruder\",\n  \"password\": \"whatever\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('not a usable endpoint', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([401, 403, 404, 405]);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "2. Vendors",
+      "description": "The searchable active-vendor dropdown and the masked current bank reference.",
+      "item": [
+        {
+          "name": "List active vendors",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/vendors",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "vendors"
+              ]
+            },
+            "description": "Soft-deleted and inactive vendors are excluded by the query itself."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', function () { pm.response.to.have.status(200); });",
+                  "const vendors = pm.response.json();",
+                  "pm.test('only active vendors are returned', function () {",
+                  "    vendors.forEach(v => pm.expect(v.active).to.be.true);",
+                  "});",
+                  "if (vendors.length > 0) { pm.collectionVariables.set('vendorId', vendors[0].id); }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Search vendors by name",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/vendors?search=North",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "vendors"
+              ],
+              "query": [
+                {
+                  "key": "search",
+                  "value": "North"
+                }
+              ]
+            },
+            "description": "Feeds the type-ahead on the Maker form."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', function () { pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Current bank account (masked)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/vendors/{{vendorId}}/current-bank-account",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "vendors",
+                "{{vendorId}}",
+                "current-bank-account"
+              ]
+            },
+            "description": "The read-only field on the Maker form. The reference is always masked."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', function () { pm.response.to.have.status(200); });",
+                  "const account = pm.response.json();",
+                  "if (account) {",
+                  "    pm.test('account reference is masked', function () {",
+                  "        pm.expect(account.maskedAccountReference).to.include('\\u2022');",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Bank account history",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/vendors/{{vendorId}}/bank-account-history",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "vendors",
+                "{{vendorId}}",
+                "bank-account-history"
+              ]
+            },
+            "description": "Superseded records are retained, never deleted."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', function () { pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "3. Bank-change requests",
+      "description": "Creation and retrieval. The body carries six business fields and nothing else.",
+      "item": [
+        {
+          "name": "Create bank-change request (Maker)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/bank-change-requests",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "bank-change-requests"
+              ]
+            },
+            "description": "The backend generates the reference, derives the Maker from the token, places payment holds and assigns the first approver.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"vendorId\": \"{{vendorId}}\",\n  \"proposedAccountHolderName\": \"Northwind Industrial Supplies\",\n  \"proposedBankName\": \"Fictional Mutual Bank\",\n  \"proposedAccountReference\": \"SYN-AC-200777\",\n  \"proposedRoutingCode\": \"SYNRT-0002\",\n  \"reason\": \"Vendor consolidated its banking to a single provider\",\n  \"evidenceReference\": \"EVD-2026-0001\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 201', function () { pm.response.to.have.status(201); });",
+                  "const body = pm.response.json();",
+                  "pm.collectionVariables.set('requestId', body.id);",
+                  "pm.collectionVariables.set('requestReference', body.requestReference);",
+                  "pm.test('reference is server-generated', function () {",
+                  "    pm.expect(body.requestReference).to.match(/^BCR-\\d{4}-\\d{6}$/);",
+                  "});",
+                  "pm.test('status starts at first approval', function () {",
+                  "    pm.expect(body.status).to.eql('PENDING_FIRST_APPROVAL');",
+                  "});",
+                  "pm.test('proposed reference is masked', function () {",
+                  "    pm.expect(body.proposedMaskedAccountReference).to.include('\\u2022');",
+                  "});",
+                  "const first = body.approvalTasks.find(t => t.stage === 'FIRST');",
+                  "if (first) { pm.collectionVariables.set('firstTaskId', first.id); }",
+                  "pm.test('first approver is not the Maker', function () {",
+                  "    pm.expect(first.assigneeId).to.not.eql(body.makerId);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "My requests (Maker)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/bank-change-requests/mine?page=0&size=20",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "bank-change-requests",
+                "mine"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "A Maker sees only their own requests."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', function () { pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get one request",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/bank-change-requests/{{requestId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "bank-change-requests",
+                "{{requestId}}"
+              ]
+            },
+            "description": "Includes the approval trail and the read-only cooling-off view."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', function () { pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List requests (Approver / AP / Administrator)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/bank-change-requests?status=COOLING_OFF&page=0&size=20",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "bank-change-requests"
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "COOLING_OFF"
+                },
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "Filterable by workflow status."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', function () { pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Blocked activations",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/bank-change-requests/blocked",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "bank-change-requests",
+                "blocked"
+              ]
+            },
+            "description": "Exception monitoring for the Administrator dashboard."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', function () { pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "NEGATIVE: Maker supplies an approver id",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/bank-change-requests",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "bank-change-requests"
+              ]
+            },
+            "description": "A Maker may never choose an approver. The field is rejected outright rather than ignored.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"vendorId\": \"{{vendorId}}\",\n  \"proposedAccountHolderName\": \"Northwind Industrial Supplies\",\n  \"proposedBankName\": \"Fictional Mutual Bank\",\n  \"proposedAccountReference\": \"SYN-AC-200777\",\n  \"proposedRoutingCode\": \"SYNRT-0002\",\n  \"reason\": \"Vendor consolidated its banking to a single provider\",\n  \"evidenceReference\": \"EVD-2026-0001\",\n  \"firstApproverId\": 2\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 400', function () { pm.response.to.have.status(400); });",
+                  "pm.test('rejected as an unexpected field', function () {",
+                  "    pm.expect(pm.response.json().code).to.eql('UNEXPECTED_FIELD');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "NEGATIVE: Maker supplies a request reference",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/bank-change-requests",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "bank-change-requests"
+              ]
+            },
+            "description": "References are generated by the backend only.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"vendorId\": \"{{vendorId}}\",\n  \"proposedAccountHolderName\": \"Northwind Industrial Supplies\",\n  \"proposedBankName\": \"Fictional Mutual Bank\",\n  \"proposedAccountReference\": \"SYN-AC-200777\",\n  \"proposedRoutingCode\": \"SYNRT-0002\",\n  \"reason\": \"Vendor consolidated its banking to a single provider\",\n  \"evidenceReference\": \"EVD-2026-0001\",\n  \"requestReference\": \"BCR-2026-999999\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 400', function () { pm.response.to.have.status(400); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "NEGATIVE: Maker supplies a status",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/bank-change-requests",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "bank-change-requests"
+              ]
+            },
+            "description": "A client cannot set the workflow status.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"vendorId\": \"{{vendorId}}\",\n  \"proposedAccountHolderName\": \"Northwind Industrial Supplies\",\n  \"proposedBankName\": \"Fictional Mutual Bank\",\n  \"proposedAccountReference\": \"SYN-AC-200777\",\n  \"proposedRoutingCode\": \"SYNRT-0002\",\n  \"reason\": \"Vendor consolidated its banking to a single provider\",\n  \"evidenceReference\": \"EVD-2026-0001\",\n  \"status\": \"ACTIVATED\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 400', function () { pm.response.to.have.status(400); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "NEGATIVE: duplicate open request",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/bank-change-requests",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "bank-change-requests"
+              ]
+            },
+            "description": "A vendor may have only one open bank-change request at a time.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"vendorId\": \"{{vendorId}}\",\n  \"proposedAccountHolderName\": \"Northwind Industrial Supplies\",\n  \"proposedBankName\": \"Fictional Mutual Bank\",\n  \"proposedAccountReference\": \"SYN-AC-200777\",\n  \"proposedRoutingCode\": \"SYNRT-0002\",\n  \"reason\": \"Vendor consolidated its banking to a single provider\",\n  \"evidenceReference\": \"EVD-2026-0001\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 422', function () { pm.response.to.have.status(422); });",
+                  "pm.test('duplicate is refused', function () {",
+                  "    pm.expect(pm.response.json().code).to.eql('DUPLICATE_OPEN_REQUEST');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "NEGATIVE: soft-deleted vendor cannot be selected",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/bank-change-requests",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "bank-change-requests"
+              ]
+            },
+            "description": "An inactive vendor is invisible to the workflow.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"vendorId\": \"{{inactiveVendorId}}\",\n  \"proposedAccountHolderName\": \"Northwind Industrial Supplies\",\n  \"proposedBankName\": \"Fictional Mutual Bank\",\n  \"proposedAccountReference\": \"SYN-AC-200777\",\n  \"proposedRoutingCode\": \"SYNRT-0002\",\n  \"reason\": \"Vendor consolidated its banking to a single provider\",\n  \"evidenceReference\": \"EVD-2026-0001\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 404', function () { pm.response.to.have.status(404); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "4. Approvals",
+      "description": "The two sequential stages. The stage comes from the task; the approver comes from the token.",
+      "item": [
+        {
+          "name": "My assigned tasks (Approver)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/approvals/my-tasks?page=0&size=20",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "approvals",
+                "my-tasks"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "Only tasks assigned to the caller."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', function () { pm.response.to.have.status(200); });",
+                  "const page = pm.response.json();",
+                  "if (page.content.length > 0) {",
+                  "    pm.collectionVariables.set('myTaskId', page.content[0].id);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Approve first stage",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/approvals/tasks/{{firstTaskId}}/decision",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "approvals",
+                "tasks",
+                "{{firstTaskId}}",
+                "decision"
+              ]
+            },
+            "description": "On approval the backend assigns an independent second approver.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"approved\": true,\n  \"comment\": \"Evidence verified against the vendor letterhead\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', function () { pm.response.to.have.status(200); });",
+                  "const body = pm.response.json();",
+                  "pm.test('request moved to the second stage', function () {",
+                  "    pm.expect(body.status).to.eql('PENDING_SECOND_APPROVAL');",
+                  "});",
+                  "const second = body.approvalTasks.find(t => t.stage === 'SECOND');",
+                  "if (second) { pm.collectionVariables.set('secondTaskId', second.id); }",
+                  "const first = body.approvalTasks.find(t => t.stage === 'FIRST');",
+                  "pm.test('the two approvers are different people', function () {",
+                  "    pm.expect(second.assigneeId).to.not.eql(first.assigneeId);",
+                  "    pm.expect(second.assigneeId).to.not.eql(body.makerId);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Approve second stage",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/approvals/tasks/{{secondTaskId}}/decision",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "approvals",
+                "tasks",
+                "{{secondTaskId}}",
+                "decision"
+              ]
+            },
+            "description": "Dual approval complete: the request enters cooling-off and the details stay inactive.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"approved\": true,\n  \"comment\": \"Independently verified by a second reviewer\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', function () { pm.response.to.have.status(200); });",
+                  "const body = pm.response.json();",
+                  "pm.test('cooling-off has started', function () {",
+                  "    pm.expect(body.status).to.eql('COOLING_OFF');",
+                  "    pm.expect(body.coolingOff.endAt).to.be.a('string');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "My decision history",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/approvals/my-history?page=0&size=20",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "approvals",
+                "my-history"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "Completed decisions are never editable."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', function () { pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "All pending tasks (AP / Administrator)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/approvals/pending?page=0&size=20",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "approvals",
+                "pending"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "Feeds the reassignment screens."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', function () { pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "NEGATIVE: Maker approves their own request",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/approvals/tasks/{{firstTaskId}}/decision",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "approvals",
+                "tasks",
+                "{{firstTaskId}}",
+                "decision"
+              ]
+            },
+            "description": "Run this with the Maker's token. Separation of duties blocks it.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"approved\": true,\n  \"comment\": \"Attempting to approve my own request\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 403', function () { pm.response.to.have.status(403); });",
+                  "pm.test('blocked by separation of duties', function () {",
+                  "    pm.expect(pm.response.json().code).to.be.oneOf(",
+                  "        ['MAKER_CANNOT_APPROVE', 'NOT_AN_APPROVER']);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "NEGATIVE: an unassigned approver decides",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/approvals/tasks/{{secondTaskId}}/decision",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "approvals",
+                "tasks",
+                "{{secondTaskId}}",
+                "decision"
+              ]
+            },
+            "description": "Run with an approver who does not hold this task.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"approved\": true,\n  \"comment\": \"This task is not mine to decide\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 403', function () { pm.response.to.have.status(403); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "NEGATIVE: deciding the same task twice",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/approvals/tasks/{{firstTaskId}}/decision",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "approvals",
+                "tasks",
+                "{{firstTaskId}}",
+                "decision"
+              ]
+            },
+            "description": "A decided task is closed. The repeat is a conflict, not a silent no-op.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"approved\": true,\n  \"comment\": \"Approving a second time\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 409', function () { pm.response.to.have.status(409); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "NEGATIVE: rejection without a meaningful comment",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/approvals/tasks/{{secondTaskId}}/decision",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "approvals",
+                "tasks",
+                "{{secondTaskId}}",
+                "decision"
+              ]
+            },
+            "description": "A rejection needs at least ten characters of explanation.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"approved\": false,\n  \"comment\": \"no\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 422', function () { pm.response.to.have.status(422); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "5. Reassignment",
+      "description": "Accounts Payable and Administrator only. Assignment history is preserved.",
+      "item": [
+        {
+          "name": "Eligible replacements",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/approvals/tasks/{{secondTaskId}}/eligible-replacements",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "approvals",
+                "tasks",
+                "{{secondTaskId}}",
+                "eligible-replacements"
+              ]
+            },
+            "description": "Already excludes the Maker, the current assignee and anyone involved."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', function () { pm.response.to.have.status(200); });",
+                  "const options = pm.response.json();",
+                  "if (options.length > 0) {",
+                  "    pm.collectionVariables.set('replacementUserId', options[0].id);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Reassign a pending task",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/approvals/tasks/{{secondTaskId}}/reassign",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "approvals",
+                "tasks",
+                "{{secondTaskId}}",
+                "reassign"
+              ]
+            },
+            "description": "Closes the old task as REASSIGNED and opens a new one.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"replacementUserId\": \"{{replacementUserId}}\",\n  \"reason\": \"The assigned approver is on leave until the end of the month\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', function () { pm.response.to.have.status(200); });",
+                  "const task = pm.response.json();",
+                  "pm.collectionVariables.set('secondTaskId', task.id);",
+                  "pm.test('new task is pending with the replacement', function () {",
+                  "    pm.expect(task.status).to.eql('PENDING');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "NEGATIVE: reassignment without a reason",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/approvals/tasks/{{secondTaskId}}/reassign",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "approvals",
+                "tasks",
+                "{{secondTaskId}}",
+                "reassign"
+              ]
+            },
+            "description": "A reassignment reason is mandatory.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"replacementUserId\": \"{{replacementUserId}}\",\n  \"reason\": \"busy\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 400', function () { pm.response.to.have.status(400); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "NEGATIVE: Maker attempts a reassignment",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/approvals/tasks/{{secondTaskId}}/reassign",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "approvals",
+                "tasks",
+                "{{secondTaskId}}",
+                "reassign"
+              ]
+            },
+            "description": "Run with the Maker's token.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"replacementUserId\": \"{{replacementUserId}}\",\n  \"reason\": \"Attempting to reassign as the Maker\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 403', function () { pm.response.to.have.status(403); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "6. Payments",
+      "description": "Accounts Payable only. The reference, id, status and timestamps are all generated by the backend.",
+      "item": [
+        {
+          "name": "Create payment",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/payments",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "payments"
+              ]
+            },
+            "description": "Five business fields. No reference, id, status or bank-account id.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"vendorId\": \"{{vendorId}}\",\n  \"amount\": 12500.0,\n  \"currency\": \"USD\",\n  \"dueDate\": \"2026-12-15\",\n  \"description\": \"Quarterly facility services\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 201', function () { pm.response.to.have.status(201); });",
+                  "const body = pm.response.json();",
+                  "pm.collectionVariables.set('paymentId', body.id);",
+                  "pm.test('reference is server-generated', function () {",
+                  "    pm.expect(body.paymentReference).to.match(/^PAY-\\d{4}-\\d{6}$/);",
+                  "});",
+                  "pm.test('status is set by the backend', function () {",
+                  "    pm.expect(body.status).to.be.oneOf(['CREATED', 'ON_HOLD']);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List payments",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/payments?page=0&size=20",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "payments"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "Eligibility is recomputed live for every row."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', function () { pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Payment eligibility",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/payments/{{paymentId}}/eligibility",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "payments",
+                "{{paymentId}}",
+                "eligibility"
+              ]
+            },
+            "description": "The single definition used by the UI and by the processing path."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', function () { pm.response.to.have.status(200); });",
+                  "const body = pm.response.json();",
+                  "pm.test('eligibility is explained, not just flagged', function () {",
+                  "    if (!body.eligible) { pm.expect(body.reason).to.be.a('string'); }",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Holds on a payment",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/payments/{{paymentId}}/holds",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "payments",
+                "{{paymentId}}",
+                "holds"
+              ]
+            },
+            "description": "Both active and released holds, for the audit trail."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', function () { pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Process payment",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/payments/{{paymentId}}/process",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "payments",
+                "{{paymentId}}",
+                "process"
+              ]
+            },
+            "description": "Succeeds only when eligibility passes at this moment. A held payment returns 422."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('either processed or blocked with a reason', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 422]);",
+                  "});",
+                  "if (pm.response.code === 422) {",
+                  "    pm.test('blocked for a stated reason', function () {",
+                  "        pm.expect(pm.response.json().code).to.eql('PAYMENT_NOT_ELIGIBLE');",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "NEGATIVE: client supplies a payment reference",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/payments",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "payments"
+              ]
+            },
+            "description": "Payment references are never client-supplied.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"vendorId\": \"{{vendorId}}\",\n  \"amount\": 12500.0,\n  \"currency\": \"USD\",\n  \"dueDate\": \"2026-12-15\",\n  \"description\": \"Quarterly facility services\",\n  \"paymentReference\": \"PAY-2026-000999\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 400', function () { pm.response.to.have.status(400); });",
+                  "pm.test('rejected as an unexpected field', function () {",
+                  "    pm.expect(pm.response.json().code).to.eql('UNEXPECTED_FIELD');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "NEGATIVE: client supplies a payment status",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/payments",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "payments"
+              ]
+            },
+            "description": "The initial status is the backend's to set.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"vendorId\": \"{{vendorId}}\",\n  \"amount\": 12500.0,\n  \"currency\": \"USD\",\n  \"dueDate\": \"2026-12-15\",\n  \"description\": \"Quarterly facility services\",\n  \"status\": \"PROCESSED\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 400', function () { pm.response.to.have.status(400); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "NEGATIVE: Maker reaches the payment module",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/payments",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "payments"
+              ]
+            },
+            "description": "Run with the Maker's token: payments are Accounts Payable's."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 403', function () { pm.response.to.have.status(403); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "7. Payment holds",
+      "description": "Release is its own authorised operation. Nothing in the approval or override workflow releases a hold.",
+      "item": [
+        {
+          "name": "List active holds",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/holds?page=0&size=20",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "holds"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "Active holds across all payments."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', function () { pm.response.to.have.status(200); });",
+                  "const page = pm.response.json();",
+                  "if (page.content.length > 0) {",
+                  "    pm.collectionVariables.set('holdId', page.content[0].id);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Release a hold",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/holds/{{holdId}}/release",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "holds",
+                "{{holdId}}",
+                "release"
+              ]
+            },
+            "description": "Conditions are rechecked at release time; the actor, time and justification are recorded.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"justification\": \"Vendor confirmed banking details by callback to a known number\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', function () { pm.response.to.have.status(200); });",
+                  "pm.test('hold is released', function () {",
+                  "    pm.expect(pm.response.json().status).to.eql('RELEASED');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "NEGATIVE: release without a justification",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/holds/{{holdId}}/release",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "holds",
+                "{{holdId}}",
+                "release"
+              ]
+            },
+            "description": "A justification of at least ten characters is required.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"justification\": \"ok\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 400', function () { pm.response.to.have.status(400); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "NEGATIVE: Administrator attempts a release",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/holds/{{holdId}}/release",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "holds",
+                "{{holdId}}",
+                "release"
+              ]
+            },
+            "description": "Run with the Administrator's token: releasing is Accounts Payable's alone.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"justification\": \"Administrator attempting to release a payment hold\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 403', function () { pm.response.to.have.status(403); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "NEGATIVE: releasing the same hold twice",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/holds/{{holdId}}/release",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "holds",
+                "{{holdId}}",
+                "release"
+              ]
+            },
+            "description": "A released hold cannot be released again.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"justification\": \"Attempting to release an already-released hold\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 409', function () { pm.response.to.have.status(409); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "8. Emergency overrides",
+      "description": "Requested by Accounts Payable, decided by an Administrator. Authorises a documented cooling-off exception and nothing else.",
+      "item": [
+        {
+          "name": "Request an override (Accounts Payable)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/overrides",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "overrides"
+              ]
+            },
+            "description": "Requires completed dual approval and a request in cooling-off.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"bankChangeRequestId\": \"{{requestId}}\",\n  \"justification\": \"Vendor payroll run is due today and the controller has confirmed the new details by callback\",\n  \"evidenceReference\": \"EVD-OVR-2026-0001\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 201', function () { pm.response.to.have.status(201); });",
+                  "const body = pm.response.json();",
+                  "pm.collectionVariables.set('overrideId', body.id);",
+                  "pm.test('reference is server-generated', function () {",
+                  "    pm.expect(body.overrideReference).to.match(/^EOV-\\d{4}-\\d{6}$/);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Decide an override (Administrator)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/overrides/decision/{{overrideId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "overrides",
+                "decision",
+                "{{overrideId}}"
+              ]
+            },
+            "description": "Approval brings the cooling-off deadline forward. Dual approval still stands, revalidation still runs, holds are untouched.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"approved\": true,\n  \"comment\": \"Callback evidence accepted\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', function () { pm.response.to.have.status(200); });",
+                  "pm.test('decision recorded', function () {",
+                  "    pm.expect(pm.response.json().status).to.be.oneOf(",
+                  "        ['APPROVED', 'REJECTED']);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List overrides",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/overrides?page=0&size=20",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "overrides"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "Filterable by status."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', function () { pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "NEGATIVE: Accounts Payable decides an override",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/overrides/decision/{{overrideId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "overrides",
+                "decision",
+                "{{overrideId}}"
+              ]
+            },
+            "description": "Run with the Accounts Payable token: only an Administrator decides.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"approved\": true,\n  \"comment\": \"Attempting to decide my own request\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 403', function () { pm.response.to.have.status(403); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "NEGATIVE: override before dual approval",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/overrides",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "overrides"
+              ]
+            },
+            "description": "An override can never substitute for the two approvals.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"bankChangeRequestId\": \"{{freshRequestId}}\",\n  \"justification\": \"Attempting an override before both approvals are complete\",\n  \"evidenceReference\": \"EVD-OVR-2026-0002\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 422', function () { pm.response.to.have.status(422); });",
+                  "pm.test('dual approval is a precondition', function () {",
+                  "    pm.expect(pm.response.json().code).to.eql('DUAL_APPROVAL_INCOMPLETE');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "NEGATIVE: deciding an override twice",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/overrides/decision/{{overrideId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "overrides",
+                "decision",
+                "{{overrideId}}"
+              ]
+            },
+            "description": "A decided override is final.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"approved\": false,\n  \"comment\": \"Attempting to change a recorded decision\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 409', function () { pm.response.to.have.status(409); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "9. Notifications",
+      "description": "Private to the recipient. There is no path by which one user can name another user's notification.",
+      "item": [
+        {
+          "name": "My notifications",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/notifications?page=0&size=20",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "notifications"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "Scoped to the authenticated recipient."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', function () { pm.response.to.have.status(200); });",
+                  "const page = pm.response.json();",
+                  "if (page.content.length > 0) {",
+                  "    pm.collectionVariables.set('notificationId', page.content[0].id);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Unread count",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/notifications/summary",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "notifications",
+                "summary"
+              ]
+            },
+            "description": "Drives the notification bell."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', function () { pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Mark as read",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/notifications/{{notificationId}}/read",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "notifications",
+                "{{notificationId}}",
+                "read"
+              ]
+            },
+            "description": "Only the recipient can mark their own notification read."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', function () { pm.response.to.have.status(200); });",
+                  "pm.test('marked read', function () {",
+                  "    pm.expect(pm.response.json().read).to.be.true;",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "NEGATIVE: another user's notification",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/notifications/{{otherUserNotificationId}}/read",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "notifications",
+                "{{otherUserNotificationId}}",
+                "read"
+              ]
+            },
+            "description": "Run with a different user's token: the lookup is scoped by recipient, so it is indistinguishable from a notification that does not exist."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 404', function () { pm.response.to.have.status(404); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "10. Audit",
+      "description": "Administrator only, read-only, append-only. Sensitive references are masked.",
+      "item": [
+        {
+          "name": "List audit entries",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/audit?page=0&size=50",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "audit"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "50"
+                }
+              ]
+            },
+            "description": "Most recent first."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', function () { pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Audit for one request",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/audit?entityType=BANK_CHANGE_REQUEST&entityId={{requestId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "audit"
+              ],
+              "query": [
+                {
+                  "key": "entityType",
+                  "value": "BANK_CHANGE_REQUEST"
+                },
+                {
+                  "key": "entityId",
+                  "value": "{{requestId}}"
+                }
+              ]
+            },
+            "description": "The full trail of a single bank-change request."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', function () { pm.response.to.have.status(200); });",
+                  "const page = pm.response.json();",
+                  "pm.test('workflow events are recorded', function () {",
+                  "    pm.expect(page.content).to.be.an('array');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Filter by action",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/audit?action=SEPARATION_OF_DUTIES_VIOLATION_BLOCKED&page=0&size=50",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "audit"
+              ],
+              "query": [
+                {
+                  "key": "action",
+                  "value": "SEPARATION_OF_DUTIES_VIOLATION_BLOCKED"
+                },
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "50"
+                }
+              ]
+            },
+            "description": "For example every separation-of-duties block."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', function () { pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "NEGATIVE: Accounts Payable reads the audit log",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/audit",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "audit"
+              ]
+            },
+            "description": "Run with the Accounts Payable token."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 403', function () { pm.response.to.have.status(403); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "NEGATIVE: audit has no write endpoint",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/audit",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "audit"
+              ]
+            },
+            "description": "Audit rows are written by the service layer only.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"FABRICATED_EVENT\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('no write endpoint exists', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([403, 404, 405]);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
