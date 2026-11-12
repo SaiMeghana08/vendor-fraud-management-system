@@ -178,7 +178,7 @@ jobs:
           cd ~/vendor-fraud-deployment
 
           echo "Checking deployment files..."
-          test -f docker-compose.yml
+          test -f docker-compose.yaml
           test -f .env
 
           echo "Checking passwordless sudo access..."
