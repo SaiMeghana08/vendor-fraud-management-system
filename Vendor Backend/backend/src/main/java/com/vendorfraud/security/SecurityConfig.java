@@ -23,7 +23,8 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 /**
  * Stateless, role-based security.
  *
- * <p>Coarse URL rules live here; the fine-grained rules that matter
+ * <p>
+ * Coarse URL rules live here; the fine-grained rules that matter
  * (only the assigned approver may decide, only the recipient may read a
  * notification) are enforced in the service layer where the entity is
  * available.
@@ -49,35 +50,38 @@ public class SecurityConfig {
     @Bean
     SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-            .csrf(csrf -> csrf.disable())
-            .cors(Customizer.withDefaults())
-            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-            .authorizeHttpRequests(auth -> auth
-                    .requestMatchers("/api/auth/login").permitAll()
-                    .requestMatchers("/api/health").permitAll()
-                    // There is deliberately no registration or self-service
-                    // role endpoint to permit here.
-                    .requestMatchers("/api/audit/**").hasRole("ADMINISTRATOR")
-                    .requestMatchers("/api/overrides/decision/**").hasRole("ADMINISTRATOR")
-                    .requestMatchers("/api/payments/**").hasAnyRole("ACCOUNTS_PAYABLE", "ADMINISTRATOR")
-                    .requestMatchers("/api/holds/**").hasAnyRole("ACCOUNTS_PAYABLE", "ADMINISTRATOR")
-                    .anyRequest().authenticated())
-            .exceptionHandling(ex -> ex
-                    .authenticationEntryPoint((request, response, authException) ->
-                            write(response, HttpStatus.UNAUTHORIZED, "UNAUTHENTICATED",
-                                    "Authentication is required", request.getRequestURI()))
-                    .accessDeniedHandler((request, response, deniedException) ->
-                            write(response, HttpStatus.FORBIDDEN, "ACCESS_DENIED",
-                                    "You are not permitted to perform this operation",
-                                    request.getRequestURI())))
-            .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+                .csrf(csrf -> csrf.disable())
+                .cors(Customizer.withDefaults())
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/api/auth/login").permitAll()
+                        .requestMatchers("/api/health").permitAll()
+                        // There is deliberately no registration or self-service
+                        // role endpoint to permit here.
+                        .requestMatchers("/api/audit/**").hasRole("ADMINISTRATOR")
+                        .requestMatchers("/api/overrides/decision/**").hasRole("ADMINISTRATOR")
+                        .requestMatchers("/api/payments/**").hasAnyRole("ACCOUNTS_PAYABLE", "ADMINISTRATOR")
+                        .requestMatchers("/api/holds/**").hasAnyRole("ACCOUNTS_PAYABLE", "ADMINISTRATOR")
+                        .anyRequest().authenticated())
+                .exceptionHandling(ex -> ex
+                        .authenticationEntryPoint((request, response, authException) -> write(response,
+                                HttpStatus.UNAUTHORIZED, "UNAUTHENTICATED",
+                                "Authentication is required", request.getRequestURI()))
+                        .accessDeniedHandler((request, response, deniedException) -> write(response,
+                                HttpStatus.FORBIDDEN, "ACCESS_DENIED",
+                                "You are not permitted to perform this operation",
+                                request.getRequestURI())))
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
         return http.build();
     }
 
     @Bean
     CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of("http://localhost:5173"));
+        configuration.setAllowedOrigins(List.of(
+                "http://localhost:5173",
+                "http://localhost:8085",
+                "http://127.0.0.1:8085"));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("Authorization", "Content-Type"));
         configuration.setMaxAge(3600L);
@@ -87,7 +91,7 @@ public class SecurityConfig {
     }
 
     private void write(jakarta.servlet.http.HttpServletResponse response, HttpStatus status,
-                       String code, String message, String path) throws java.io.IOException {
+            String code, String message, String path) throws java.io.IOException {
         response.setStatus(status.value());
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
         objectMapper.writeValue(response.getOutputStream(),

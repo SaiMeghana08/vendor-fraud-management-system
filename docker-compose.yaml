@@ -1,0 +1,49 @@
+
+services:
+
+  mysql:
+    image: mysql:8.0
+    container_name: vendor-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?Set MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: vendor_fraud_new
+      MYSQL_USER: vendor_fraud_app
+      MYSQL_PASSWORD: ${MYSQL_APP_PASSWORD:?Set MYSQL_APP_PASSWORD}
+    ports:
+      - "127.0.0.1:3308:3306"
+    volumes:
+      - vendor-mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 --silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    image: vendor-fraud-backend:local
+    restart: unless-stopped
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/vendor_fraud_new?useSSL=false&allowPublicKeyRetrieval=true
+      SPRING_DATASOURCE_USERNAME: vendor_fraud_app
+      SPRING_DATASOURCE_PASSWORD: ${MYSQL_APP_PASSWORD:?Set MYSQL_APP_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET}
+      BOOTSTRAP_ENABLED: "true"
+      BOOTSTRAP_PASSWORD: ${BOOTSTRAP_PASSWORD:?Set BOOTSTRAP_PASSWORD}
+    ports:
+      - "127.0.0.1:9090:9090"
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+  frontend:
+    image: vendor-fraud-frontend:local
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8085:80"
+    depends_on:
+      - backend
+
+volumes:
+  vendor-mysql-data:
+    external: true
