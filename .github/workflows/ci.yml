@@ -10,26 +10,35 @@ permissions:
   contents: read
 
 jobs:
-  verify-repository:
-    name: Verify Repository
+  backend-build:
+    name: Spring Boot Backend Build
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout GitHub Repository
+      - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Verify Project Structure
+      - name: Set Up Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+          cache-dependency-path: 'Vendor Backend/backend/pom.xml'
+
+      - name: Verify Java and Maven
         run: |
-          echo "Checking backend..."
-          test -f "Vendor Backend/backend/pom.xml"
+          java -version
+          mvn -version
 
-          echo "Checking frontend..."
-          test -f "Vendor Frontend/frontend/package.json"
+      - name: Build Spring Boot Backend
+        working-directory: 'Vendor Backend/backend'
+        run: mvn -B -DskipTests clean package
 
-          echo "Checking frontend lockfile..."
-          test -f "Vendor Frontend/frontend/package-lock.json"
-
-          echo "Checking Docker Compose..."
-          test -f "docker-compose.yaml"
-
-          echo "Repository structure verified."
+      - name: Upload Backend JAR
+        uses: actions/upload-artifact@v4
+        with:
+          name: vendor-fraud-backend
+          path: 'Vendor Backend/backend/target/*.jar'
+          if-no-files-found: error
+          retention-days: 7
