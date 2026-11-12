@@ -42,3 +42,41 @@ jobs:
           path: 'Vendor Backend/backend/target/*.jar'
           if-no-files-found: error
           retention-days: 7
+
+  frontend-build:
+    name: React Frontend Build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set Up Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: 'Vendor Frontend/frontend/package-lock.json'
+
+      - name: Verify Node.js and npm
+        run: |
+          node --version
+          npm --version
+
+      - name: Install Frontend Dependencies
+        working-directory: 'Vendor Frontend/frontend'
+        run: npm ci
+
+      - name: Build React Frontend
+        working-directory: 'Vendor Frontend/frontend'
+        run: npm run build
+
+      - name: Upload Frontend Build
+        uses: actions/upload-artifact@v4
+        with:
+          name: vendor-fraud-frontend
+          path: |
+            Vendor Frontend/frontend/dist/
+            Vendor Frontend/frontend/build/
+          if-no-files-found: error
+          retention-days: 7
