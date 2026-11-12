@@ -1,0 +1,35 @@
+
+name: Vendor Fraud - CI Pipeline
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify-repository:
+    name: Verify Repository
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout GitHub Repository
+        uses: actions/checkout@v4
+
+      - name: Verify Project Structure
+        run: |
+          echo "Checking backend..."
+          test -f "Vendor Backend/backend/pom.xml"
+
+          echo "Checking frontend..."
+          test -f "Vendor Frontend/frontend/package.json"
+
+          echo "Checking frontend lockfile..."
+          test -f "Vendor Frontend/frontend/package-lock.json"
+
+          echo "Checking Docker Compose..."
+          test -f "docker-compose.yaml"
+
+          echo "Repository structure verified."
