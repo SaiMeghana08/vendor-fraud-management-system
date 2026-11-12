@@ -142,6 +142,7 @@ jobs:
           EC2_HOST_KEY: ${{ secrets.EC2_HOST_KEY }}
         run: |
           set -euo pipefail
+
           mkdir -p ~/.ssh
           chmod 700 ~/.ssh
 
@@ -151,10 +152,13 @@ jobs:
           printf '%s\n' "$EC2_HOST_KEY" > ~/.ssh/known_hosts
           chmod 600 ~/.ssh/known_hosts
 
+          echo "Testing EC2 SSH connection..."
+
           ssh -i ~/.ssh/vendor_deploy \
             -o BatchMode=yes \
             -o StrictHostKeyChecking=yes \
-            "$EC2_USER@$EC2_HOST" "echo 'SSH connection successful'"
+            "$EC2_USER@$EC2_HOST" \
+            "echo 'SSH connection successful'"
 
       - name: Deploy Docker Images to EC2
         env:
@@ -173,18 +177,31 @@ jobs:
 
           cd ~/vendor-fraud-deployment
 
+          echo "Checking deployment files..."
           test -f docker-compose.yml
           test -f .env
+
+          echo "Checking passwordless sudo access..."
+          sudo -n true
 
           export BACKEND_IMAGE_TAG="$IMAGE_TAG"
           export FRONTEND_IMAGE_TAG="$IMAGE_TAG"
 
-          docker compose --env-file .env pull backend frontend
+          echo "Validating Docker Compose..."
+          sudo -n docker compose --env-file .env config --quiet
 
-          docker compose --env-file .env up -d \
+          echo "Images selected for deployment:"
+          sudo -n docker compose --env-file .env config --images
+
+          echo "Pulling backend and frontend images..."
+          sudo -n docker compose --env-file .env pull backend frontend
+
+          echo "Starting updated containers..."
+          sudo -n docker compose --env-file .env up -d \
             --no-deps backend frontend
 
-          docker compose --env-file .env ps
+          echo "Checking container status..."
+          sudo -n docker compose --env-file .env ps
 
           echo "Checking frontend availability..."
 
@@ -194,19 +211,27 @@ jobs:
               echo "Frontend is responding."
               exit 0
             fi
+
+            echo "Waiting for frontend... attempt $attempt/30"
             sleep 5
           done
 
           echo "Frontend health check failed."
-          docker compose --env-file .env logs \
+
+          sudo -n docker compose --env-file .env ps
+
+          sudo -n docker compose --env-file .env logs \
             --tail=100 frontend backend
+
           exit 1
           REMOTE
 
       - name: Deployment Summary
         if: success()
+        env:
+          EC2_HOST: ${{ secrets.EC2_HOST }}
         run: |
           echo "Deployment completed."
           echo "Commit: ${{ github.sha }}"
           echo "Backend and frontend images deployed to EC2."
-          echo "Frontend should be accessible at http://$EC2_HOST:8085"
+          echo "Application URL: http://$EC2_HOST/"
