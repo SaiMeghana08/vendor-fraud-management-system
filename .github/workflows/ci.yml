@@ -209,3 +209,4 @@ jobs:
           echo "Deployment completed."
           echo "Commit: ${{ github.sha }}"
           echo "Backend and frontend images deployed to EC2."
+          echo "Frontend should be accessible at http://$EC2_HOST:8085"
