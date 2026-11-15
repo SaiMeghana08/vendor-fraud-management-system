@@ -189,11 +189,25 @@ jobs:
             "IMAGE_TAG='$IMAGE_TAG' bash -se" <<'REMOTE'
           set -euo pipefail
 
-          cd ~/vendor-fraud-deployment
+          echo "Checking deployment directory..."
+          echo "Connected as: $(whoami)"
 
+          cd /home/ubuntu/vendor-fraud-deployment
+
+          echo "Current directory: $(pwd)"
           echo "Checking deployment files..."
-          test -f docker-compose.yaml
-          test -f .env
+
+          if [ ! -f docker-compose.yaml ]; then
+            echo "ERROR: docker-compose.yaml is missing"
+            exit 1
+          fi
+
+          if [ ! -f .env ]; then
+            echo "ERROR: .env is missing"
+            exit 1
+          fi
+
+          echo "Both deployment files found successfully."
 
           echo "Checking passwordless sudo access..."
           sudo -n true
