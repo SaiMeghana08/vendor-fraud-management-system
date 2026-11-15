@@ -53,3 +53,28 @@ logs/
 # Local database dumps
 *.sql.gz
 *.dump
+
+
+
+# Python environment
+analytics/.venv/
+analytics/__pycache__/
+analytics/**/__pycache__/
+
+# Database credentials
+analytics/.env
+
+# Generated analytics data
+analytics/data/*
+analytics/reports/*
+
+
+
+
+@"
+.venv/
+.env
+__pycache__/
+data/raw/
+data/curated/
+"@ | Set-Content .gitignore
