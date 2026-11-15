@@ -131,8 +131,6 @@ jobs:
     needs:
       - docker-publish
 
-    environment: production
-
     steps:
       - name: Configure SSH
         env:
@@ -143,6 +141,13 @@ jobs:
         run: |
           set -euo pipefail
 
+          echo "Preparing SSH configuration..."
+
+          : "${EC2_HOST:?EC2_HOST is missing}"
+          : "${EC2_USER:?EC2_USER is missing}"
+          : "${EC2_SSH_KEY:?EC2_SSH_KEY is missing}"
+          : "${EC2_HOST_KEY:?EC2_HOST_KEY is missing}"
+
           mkdir -p ~/.ssh
           chmod 700 ~/.ssh
 
@@ -152,11 +157,20 @@ jobs:
           printf '%s\n' "$EC2_HOST_KEY" > ~/.ssh/known_hosts
           chmod 600 ~/.ssh/known_hosts
 
+          echo "Checking known_hosts configuration..."
+
+          ssh-keygen -F "$EC2_HOST" -f ~/.ssh/known_hosts \
+            > /dev/null || {
+              echo "ERROR: EC2 host is missing from known_hosts"
+              exit 1
+            }
+
           echo "Testing EC2 SSH connection..."
 
           ssh -i ~/.ssh/vendor_deploy \
             -o BatchMode=yes \
             -o StrictHostKeyChecking=yes \
+            -o ConnectTimeout=15 \
             "$EC2_USER@$EC2_HOST" \
             "echo 'SSH connection successful'"
 
